@@ -409,7 +409,10 @@ impl DTLSConn {
         });
 
         // Do handshake
-        c.handshake(initial_fsm_state).await?;
+        // Temporary fix until https://github.com/webrtc-rs/webrtc/issues/614 is solved
+        tokio::time::timeout(Duration::from_secs(3), c.handshake(initial_fsm_state))
+            .await
+            .map_err(|_| Error::ErrConnClosed)??;
 
         trace!("Handshake Completed");
 
