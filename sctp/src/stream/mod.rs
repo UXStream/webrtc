@@ -270,7 +270,12 @@ impl Stream {
     /// Returns an error if the write half of this stream is shutdown or `p` is too large.
     pub async fn write_sctp(&self, p: &Bytes, ppi: PayloadProtocolIdentifier) -> Result<usize> {
         let chunks = self.prepare_write(p, ppi)?;
-        self.send_payload_data(chunks).await?;
+        tokio::time::timeout(
+            std::time::Duration::from_secs(1),
+            self.send_payload_data(chunks),
+        )
+        .await
+        .map_err(|_| Error::ErrStreamClosed)??;
 
         Ok(p.len())
     }
